@@ -1,0 +1,1 @@
+from ckanext.zhstat.harvesters.zhstatharvester import ZhstatHarvester
