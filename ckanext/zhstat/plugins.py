@@ -4,5 +4,5 @@ from pylons import config
 
 class ZhstatHarvest(p.SingletonPlugin):
     """
-    Plugin containing the harvester for Zhstat
+    Plugin containing the harvester for for the Statistical Office of the Canton of Zurich
     """
