@@ -60,8 +60,9 @@ class ZhstatHarvester(HarvesterBase):
 
 
     def _fetch_metadata(self):
-        '''
-        Fetching the metadata file for for the Statistical Office of Canton of Zurich from the S3 Bucket and save on disk
+        '''Fetching the metadata file for for the Statistical Office of
+        Canton of Zurich from the S3 Bucket and save on disk
+
         '''
         temp_dir = tempfile.mkdtemp()
         try:
@@ -71,8 +72,8 @@ class ZhstatHarvester(HarvesterBase):
             log.debug('Saving metadata file to %s' % metadata_file_path)
             metadata_file.get_contents_to_filename(metadata_file_path)
             return open(metadata_file_path).read()
-        except Exception, e:
-            log.exception(e)
+        except Exception, exception:
+            log.exception(exception)
             raise
 
     def _file_is_available(self, file_name):
@@ -84,9 +85,28 @@ class ZhstatHarvester(HarvesterBase):
         if k.exists():
             return True
         else:
-            log.debug(str(status) + ': ' + file_name)
+            log.debug('File does not exist on S3: ' + file_name)
             return False
 
+    def _generate_tags_array(self, dataset):
+        '''
+        All tags for a dataset into an array
+        '''
+        tags = []
+        for tag in dataset.find('tags').findall('tag'):
+            tags.append(tag.text)
+        return tags
+
+    def _get_data_groups(self, data):
+        '''
+        Get group name
+        '''
+        groups = []
+
+        for tag in data.find('groups').findall('group'):
+            groups.append(tag.text)
+
+        return groups
 
     def _generate_term_translations(self, base_data, dataset):
         '''
@@ -106,16 +126,7 @@ class ZhstatHarvester(HarvesterBase):
                             'term_translation': data.find(key).text
                             })
 
-                base_notes_translation = self._generate_notes(base_data)
-                other_notes_translation = self._generate_notes(data)
-                translations.append({
-                    'lang_code': lang,
-                    'term': base_notes_translation,
-                    'term_translation': other_notes_translation
-                    })
-
         return translations
-
 
     def _generate_resources(self, dataset):
         '''
@@ -123,33 +134,36 @@ class ZhstatHarvester(HarvesterBase):
         '''
         resources = []
         for data in dataset:
-            if self._file_is_available(data.find('resource').find('name').text):
-                resources.append({
-                    'name': data.find('resource').find('name').text,
-                    'type': data.find('resource').find('type').text,
-                    })
-        return resources
+            if data.find('resources') is not None:
+                for resource in data.find('resources'):
+                    if self._file_is_available(resource.find('name').text):
+                        resources.append({
+                            'name': resource.find('name').text,
+                            'type': resource.find('type').text
+                        })
 
+        return resources
 
     def _generate_metadata(self, base_data, dataset):
         '''
         Return all the necessary metadata to be able to create a data
         '''
         resources = self._generate_resources(dataset)
-        translations = self._generate_term_translations(base_data, dataset)
+        group = self._get_data_groups(base_data)
 
-        if len(resources) != 0:
+        if len(resources) != 0 and group:
             return {
-                'datasetID': base_data.get('id'),
+                'datasetID': dataset.get('id'),
                 'title': base_data.find('title').text,
-                'notes': self._generate_notes(base_data),
                 'author': base_data.find('author').text,
                 'maintainer': base_data.find('maintainer').text,
                 'maintainer_email': base_data.find('maintainer_email').text,
-                'license_url': base_data.find('licence').text,
-                'license_id': base_data.find('copyright').text,
+                'license_url': base_data.find('license').get('url'),
+                'license_id': base_data.find('license').text,
                 'translations': self._generate_term_translations(base_data, dataset),
                 'resources': resources,
+                'tags': self._generate_tags_array(base_data),
+                'groups': [group]
             }
         else:
             return None
@@ -181,15 +195,15 @@ class ZhstatHarvester(HarvesterBase):
 
             if metadata:
                 obj = HarvestObject(
-                    guid = base_data.get('id'),
+                    guid = dataset.get('id'),
                     job = harvest_job,
                     content = json.dumps(metadata)
                 )
                 obj.save()
-                log.debug('adding ' + base_data.get('id') + ' to the queue')
+                log.debug('adding ' + dataset.get('id') + ' to the queue')
                 ids.append(obj.id)
             else:
-                log.debug('Skipping ' + base_data.get('id') + ' since no resources or groups are available')
+                log.debug('Skipping ' + dataset.get('id') + ' since no resources or groups are available')
 
         return ids
 
