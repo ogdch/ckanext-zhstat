@@ -86,7 +86,36 @@ class ZhstatHarvester(HarvesterBase):
         try:
             file_path = self._fetch_metadata_file()
             ids = []
+
+            tree = etree.parse(file_path)
+            for dataset in tree.findall('dataset'):
+
+                log.debug(etree.tostring(dataset.find('data').find('resources').find('resource').find('name')))
+                log.debug(etree.tostring(dataset))
+
+                metadata = {
+                    'datasetID': dataset.get('id'),
+                    'title': 'testme',
+                    'notes': 'hcehucehu',
+                    'author': 'foobar',
+                    'maintainer': 'hagsdkfjhag',
+                    'maintainer_email': 'jahdfk@jsdgfj.cs',
+                    'license_id': 'ahdfgkajshdf',
+                    'tags': [],
+                    'groups': []
+                }
+
+                obj = HarvestObject(
+                    guid = metadata['datasetID'],
+                    job = harvest_job,
+                    content = json.dumps(metadata)
+                )
+                obj.save()
+                log.debug('adding ' + metadata['datasetID'] + ' to the queue')
+                ids.append(obj.id)
+
         except Exception, e:
+            log.debug(e)
             return False
         return ids
 
