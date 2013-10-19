@@ -51,9 +51,10 @@ class ZhstatHarvester(HarvesterBase):
         '''
         Create an S3 connection to the department bucket
         '''
-        conn = S3Connection(self.AWS_ACCESS_KEY, self.AWS_SECRET_KEY)
-        bucket = conn.get_bucket(self.BUCKET_NAME)
-        return bucket
+        if self.bucket is None:
+            conn = S3Connection(self.AWS_ACCESS_KEY, self.AWS_SECRET_KEY)
+            self.bucket = conn.get_bucket(self.BUCKET_NAME)
+        return self.bucket
 
 
     def _fetch_metadata_file(self):
