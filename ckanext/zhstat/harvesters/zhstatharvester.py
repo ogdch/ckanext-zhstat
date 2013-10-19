@@ -103,23 +103,31 @@ class ZhstatHarvester(HarvesterBase):
         '''
         groups = []
 
-        for tag in data.find('groups').findall('group'):
-            groups.append(tag.text)
+        try:
+            for tag in data.find('groups').findall('group'):
+                groups.append(tag.text)
+        except AttributeError:
+            return groups
 
         return groups
 
     def _generate_term_translations(self, base_data, dataset):
         '''
-        Return all the term_translations for a given data
+        Return all the term_translations for a given dataset
         '''
         translations = []
 
         for data in dataset:
-            if base_data.get('id') != data.get('id'):
+            if base_data.find('title') != data.find('title'):
                 lang = data.get('{http://www.w3.org/XML/1998/namespace}lang')
-                keys = ['title', 'author', 'maintainer']
-                for key in keys:
-                    if base_data.find(key).text and data.find(key).text:
+                for base_group, group in zip(self._get_data_groups(base_data), self._get_data_groups(data)):
+                    translations.append({
+                        'lang_code': lang,
+                        'term': base_group,
+                        'term_translation': group
+                    })
+                for key in ['title', 'author', 'maintainer']:
+                    if base_data.find(key) is not None and data.find(key) is not None:
                         translations.append({
                             'lang_code': lang,
                             'term': base_data.find(key).text,
@@ -146,12 +154,12 @@ class ZhstatHarvester(HarvesterBase):
 
     def _generate_metadata(self, base_data, dataset):
         '''
-        Return all the necessary metadata to be able to create a data
+        Return all the necessary metadata to be able to create a dataset
         '''
         resources = self._generate_resources(dataset)
-        group = self._get_data_groups(base_data)
+        groups = self._get_data_groups(base_data)
 
-        if len(resources) != 0 and group:
+        if len(resources) != 0 and groups:
             return {
                 'datasetID': dataset.get('id'),
                 'title': base_data.find('title').text,
@@ -163,7 +171,7 @@ class ZhstatHarvester(HarvesterBase):
                 'translations': self._generate_term_translations(base_data, dataset),
                 'resources': resources,
                 'tags': self._generate_tags_array(base_data),
-                'groups': [group]
+                'groups': groups
             }
         else:
             return None
