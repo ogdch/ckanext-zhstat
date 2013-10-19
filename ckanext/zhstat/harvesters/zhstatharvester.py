@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 class ZhstatHarvester(HarvesterBase):
     '''
-    The harvester for the Statistical Office of the Canton of Zurich
+    The harvester for the Statistical Office of Canton of Zurich
     '''
 
     BUCKET_NAME = u'bar-opendata-ch'
@@ -39,7 +39,7 @@ class ZhstatHarvester(HarvesterBase):
         u'de': u'Statistisches Amt des Kantons Zürich',
         u'fr': u'fr_Statistisches Amt des Kantons Zürich',
         u'it': u'it_Statistisches Amt des Kantons Zürich',
-        u'en': u'en_Statistisches Amt des Kantons Zürich',
+        u'en': u'Statistical Office of Canton of Zurich',
     }
     LANG_CODES = ['de', 'fr', 'it', 'en']
 
@@ -76,8 +76,8 @@ class ZhstatHarvester(HarvesterBase):
     def info(self):
         return {
             'name': 'zhstat',
-            'title': 'Statistical Office of the Canton of Zurich',
-            'description': 'Harvests the data of the Statistical Office of the Canton of Zurich',
+            'title': 'Statistical Office of Canton of Zurich',
+            'description': 'Harvests the data of the Statistical Office of Canton of Zurich',
             'form_config_interface': 'Text'
         }
 
