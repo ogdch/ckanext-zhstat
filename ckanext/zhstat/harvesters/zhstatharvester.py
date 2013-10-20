@@ -27,6 +27,8 @@ class ZhstatHarvester(HarvesterBase):
     The harvester for the Statistical Office of Canton of Zurich
     '''
 
+    HARVEST_USER = 'harvest'
+
     BUCKET_NAME = 'bar-opendata-ch'
     DATA_PATH = 'Kanton-ZH/Statistik/'
     METADATA_FILE_NAME = 'metadata.xml'
@@ -58,7 +60,6 @@ class ZhstatHarvester(HarvesterBase):
             self.bucket = conn.get_bucket(self.BUCKET_NAME)
         return self.bucket
 
-
     def _fetch_metadata(self):
         '''Fetching the metadata file for for the Statistical Office of
         Canton of Zurich from the S3 Bucket and save on disk
@@ -72,8 +73,8 @@ class ZhstatHarvester(HarvesterBase):
             log.debug('Saving metadata file to %s' % metadata_file_path)
             metadata_file.get_contents_to_filename(metadata_file_path)
             return open(metadata_file_path).read()
-        except Exception, exception:
-            log.exception(exception)
+        except Exception, detail:
+            log.exception(detail)
             raise
 
     def _file_is_available(self, file_name):
@@ -146,8 +147,10 @@ class ZhstatHarvester(HarvesterBase):
                 for resource in data.find('resources'):
                     if self._file_is_available(resource.find('name').text):
                         resources.append({
+                            # TODO what is with the url? it is needed but empty in the dataset
+                            'url': resource.find('url').text if resource.find('url').text else 'http://foobar',
                             'name': resource.find('name').text,
-                            'type': resource.find('type').text
+                            'format': resource.find('type').text
                         })
 
         return resources
@@ -218,11 +221,85 @@ class ZhstatHarvester(HarvesterBase):
     def fetch_stage(self, harvest_object):
         log.debug('In ZhstatHarvester fetch_stage')
 
+        dataset_id = json.loads(harvest_object.content)['datasetID']
+        log.debug(harvest_object.content)
+
+        try:
+            harvest_object.save()
+            log.debug('successfully processed ' + dataset_id)
+            return True
+        except Exception, detail:
+            log.exception(detail)
+            raise
+
     def import_stage(self, harvest_object):
         log.debug('In ZhstatHarvester import_stage')
 
         if not harvest_object:
             log.error('No harvest object received')
             return False
+
+        try:
+            package_dict = json.loads(harvest_object.content)
+
+            package_dict['id'] = harvest_object.guid
+            package_dict['name'] = self._gen_new_name(package_dict['title'])
+
+            user = model.User.get(self.HARVEST_USER)
+            context = {
+                'model': model,
+                'session': Session,
+                'user': self.HARVEST_USER
+                }
+
+            # Find or create group the dataset should get assigned to
+            for group_name in package_dict['groups']:
+                if not group_name:
+                    raise GroupNotFoundError('Group is not defined for dataset %s' % package_dict['title'])
+                data_dict = {
+                    'id': group_name,
+                    'name': self._gen_new_name(group_name),
+                    'title': group_name
+                    }
+                try:
+                    group_id = get_action('group_show')(context, data_dict)['id']
+                except:
+                    group = get_action('group_create')(context, data_dict)
+                    log.info('created the group ' + group['id'])
+
+            # Find or create the organization the dataset should get assigned to
+            try:
+                data_dict = {
+                    'permission': 'edit_group',
+                    'id': self._gen_new_name(self.ORGANIZATION['de']),
+                    'name': self._gen_new_name(self.ORGANIZATION['de']),
+                    'title': self.ORGANIZATION['de']
+                }
+                package_dict['owner_org'] = get_action('organization_show')(context, data_dict)['id']
+            except:
+                organization = get_action('organization_create')(context, data_dict)
+                package_dict['owner_org'] = organization['id']
+
+
+            # Save additional metadata in extras
+            extras = []
+            if 'license_url' in package_dict:
+                extras.append(('license_url', package_dict['license_url']))
+            package_dict['extras'] = extras
+            log.debug('Extras %s' % extras)
+
+            package = model.Package.get(package_dict['id'])
+            pkg_role = model.PackageRole(package=package, user=user, role=model.Role.ADMIN)
+
+            self._create_or_update_package(package_dict, harvest_object)
+
+            # Add the translations to the term_translations table
+            for translation in package_dict['translations']:
+                action.update.term_translation_update(context, translation)
+            Session.commit()
+
+        except Exception, detail:
+            log.exception(detail)
+            raise
 
         return True
