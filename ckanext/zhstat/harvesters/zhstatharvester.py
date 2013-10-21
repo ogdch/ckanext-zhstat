@@ -303,3 +303,7 @@ class ZhstatHarvester(HarvesterBase):
             raise
 
         return True
+
+
+class GroupNotFoundError(Exception):
+    pass
