@@ -89,13 +89,25 @@ class ZhstatHarvester(HarvesterBase):
             log.debug('File does not exist on S3: ' + file_name)
             return False
 
+    def _get_file_url(self, file_name):
+        '''
+        Generate a URL for the given S3 file name
+        '''
+        k = Key(self._get_s3_bucket())
+        k.key = self.DATA_PATH + file_name
+        return k.generate_url(0, query_auth=False, force_http=True)
+
     def _generate_tags_array(self, dataset):
         '''
         All tags for a dataset into an array
         '''
         tags = []
-        for tag in dataset.find('tags').findall('tag'):
-            tags.append(tag.text)
+        try:
+            for tag in dataset.find('tags').findall('tag'):
+                tags.append(tag.text)
+        except AttributeError:
+            return tags
+
         return tags
 
     def _get_data_groups(self, data):
@@ -127,6 +139,12 @@ class ZhstatHarvester(HarvesterBase):
                         'term': base_group,
                         'term_translation': group
                     })
+                for base_tag, tag in zip(self._generate_tags_array(base_data), self._generate_tags_array(data)):
+                    translations.append({
+                        'lang_code': lang,
+                        'term': munge_tag(base_tag),
+                        'term_translation': munge_tag(tag)
+                    })
                 for key in ['title', 'author', 'maintainer']:
                     if base_data.find(key) is not None and data.find(key) is not None:
                         translations.append({
@@ -147,10 +165,10 @@ class ZhstatHarvester(HarvesterBase):
                 for resource in data.find('resources'):
                     if self._file_is_available(resource.find('name').text):
                         resources.append({
-                            # TODO what is with the url? it is needed but empty in the dataset
-                            'url': resource.find('url').text if resource.find('url').text else 'http://foobar',
+                            'url': self._get_file_url(resource.find('name').text),
                             'name': resource.find('name').text,
-                            'format': resource.find('type').text
+                            'format': resource.find('type').text,
+                            'description': resource.find('description').text if resource.find('description') is not None else ''
                         })
 
         return resources
