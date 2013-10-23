@@ -185,6 +185,7 @@ class ZhstatHarvester(HarvesterBase):
                 'datasetID': dataset.get('id'),
                 'title': base_data.find('title').text,
                 'author': base_data.find('author').text,
+                'author_email': base_data.find('author_email').text,
                 'notes': base_data.find('description').text,
                 'maintainer': base_data.find('maintainer').text,
                 'maintainer_email': base_data.find('maintainer_email').text,
