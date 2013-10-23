@@ -152,6 +152,13 @@ class ZhstatHarvester(HarvesterBase):
                             'term': base_data.find(key).text,
                             'term_translation': data.find(key).text
                             })
+                for lang, org in self.ORGANIZATION.items():
+                    if lang != u'de':
+                        translations.append({
+                            'lang_code': lang,
+                            'term': self.ORGANIZATION[u'de'],
+                            'term_translation': org
+                        })
 
         return translations
 
