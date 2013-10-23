@@ -145,7 +145,7 @@ class ZhstatHarvester(HarvesterBase):
                         'term': munge_tag(base_tag),
                         'term_translation': munge_tag(tag)
                     })
-                for key in ['title', 'author', 'maintainer']:
+                for key in ['title', 'author', 'maintainer', 'description']:
                     if base_data.find(key) is not None and data.find(key) is not None:
                         translations.append({
                             'lang_code': lang,
@@ -185,6 +185,7 @@ class ZhstatHarvester(HarvesterBase):
                 'datasetID': dataset.get('id'),
                 'title': base_data.find('title').text,
                 'author': base_data.find('author').text,
+                'notes': base_data.find('description').text,
                 'maintainer': base_data.find('maintainer').text,
                 'maintainer_email': base_data.find('maintainer_email').text,
                 'license_url': base_data.find('license').get('url'),
