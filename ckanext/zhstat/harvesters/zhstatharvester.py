@@ -48,7 +48,7 @@ class ZhstatHarvester(HarvesterBase):
             'description': 'ZH Beschreibung FR',
         },
         u'it': {
-            'name': u'Canton Zurigo',
+            'name': u'Cantone di Zurigo',
             'description': 'ZH Beschreibung IT',
         },
         u'en': {
