@@ -38,11 +38,25 @@ class ZhstatHarvester(HarvesterBase):
     AWS_SECRET_KEY = config.get('ckanext.zhstat.secret_key')
 
     ORGANIZATION = {
-        u'de': u'Statistisches Amt des Kantons Zürich',
-        u'fr': u'fr_Statistisches Amt des Kantons Zürich',
-        u'it': u'it_Statistisches Amt des Kantons Zürich',
-        u'en': u'Statistical Office of Canton of Zurich',
+        u'de': {
+            'name': u'Kanton Zürich',
+            'description': u'Im Rahmen eines Pilotversuchs publiziert der Kanton ausgewählte Datensätze des Statistischen Amts und des GIS Zentrums.',
+            'website': 'http://opendata.zh.ch',
+        },
+        u'fr': {
+            'name': u'Canton de Zurich',
+            'description': 'ZH Beschreibung FR',
+        },
+        u'it': {
+            'name': u'Canton Zurigo',
+            'description': 'ZH Beschreibung IT',
+        },
+        u'en': {
+            'name': u'Canton of Zurich',
+            'description': 'ZH Beschreibung EN',
+        }
     }
+
     LANG_CODES = ['de', 'fr', 'it', 'en']
 
     config = {
@@ -154,11 +168,12 @@ class ZhstatHarvester(HarvesterBase):
                             })
                 for lang, org in self.ORGANIZATION.items():
                     if lang != u'de':
-                        translations.append({
-                            'lang_code': lang,
-                            'term': self.ORGANIZATION[u'de'],
-                            'term_translation': org
-                        })
+                        for field in ['name', 'description']:
+                            translations.append({
+                                'lang_code': lang,
+                                'term': self.ORGANIZATION[u'de'][field],
+                                'term_translation': org[field]
+                            })
 
         return translations
 
@@ -298,9 +313,15 @@ class ZhstatHarvester(HarvesterBase):
             try:
                 data_dict = {
                     'permission': 'edit_group',
-                    'id': self._gen_new_name(self.ORGANIZATION['de']),
-                    'name': self._gen_new_name(self.ORGANIZATION['de']),
-                    'title': self.ORGANIZATION['de']
+                    'id': munge_title_to_name(self.ORGANIZATION[u'de']['name']),
+                    'name': munge_title_to_name(self.ORGANIZATION[u'de']['name']),
+                    'title': self.ORGANIZATION[u'de']['name'],
+                    'extras': [
+                        {
+                            'key': 'website',
+                            'value': self.ORGANIZATION[u'de']['website']
+                        }
+                    ]
                 }
                 package_dict['owner_org'] = get_action('organization_show')(context, data_dict)['id']
             except:
