@@ -190,6 +190,7 @@ class ZhstatHarvester(HarvesterBase):
         if len(resources) != 0 and groups:
             return {
                 'datasetID': dataset.get('id'),
+                'url': base_data.find('url').text,
                 'title': base_data.find('title').text,
                 'author': base_data.find('author').text,
                 'author_email': base_data.find('author_email').text,
