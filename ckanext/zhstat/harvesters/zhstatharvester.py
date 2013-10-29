@@ -12,6 +12,7 @@ from ckan.model import Session, Package
 from ckan.logic import ValidationError, NotFound, get_action, action
 from ckan.lib.helpers import json
 from ckanext.harvest.harvesters.base import munge_tag
+from ckan.lib.munge import munge_title_to_name
 
 from ckanext.harvest.model import HarvestJob, HarvestObject, HarvestGatherError, \
                                     HarvestObjectError
