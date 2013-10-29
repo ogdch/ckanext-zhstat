@@ -311,19 +311,19 @@ class ZhstatHarvester(HarvesterBase):
                     log.info('created the group ' + group['id'])
 
             # Find or create the organization the dataset should get assigned to
+            data_dict = {
+                'permission': 'edit_group',
+                'id': munge_title_to_name(self.ORGANIZATION[u'de']['name']),
+                'name': munge_title_to_name(self.ORGANIZATION[u'de']['name']),
+                'title': self.ORGANIZATION[u'de']['name'],
+                'extras': [
+                    {
+                        'key': 'website',
+                        'value': self.ORGANIZATION[u'de']['website']
+                    }
+                ]
+            }
             try:
-                data_dict = {
-                    'permission': 'edit_group',
-                    'id': munge_title_to_name(self.ORGANIZATION[u'de']['name']),
-                    'name': munge_title_to_name(self.ORGANIZATION[u'de']['name']),
-                    'title': self.ORGANIZATION[u'de']['name'],
-                    'extras': [
-                        {
-                            'key': 'website',
-                            'value': self.ORGANIZATION[u'de']['website']
-                        }
-                    ]
-                }
                 package_dict['owner_org'] = get_action('organization_show')(context, data_dict)['id']
             except:
                 organization = get_action('organization_create')(context, data_dict)
