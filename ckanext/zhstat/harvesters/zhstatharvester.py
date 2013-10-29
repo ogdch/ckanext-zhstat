@@ -302,7 +302,7 @@ class ZhstatHarvester(HarvesterBase):
                     raise GroupNotFoundError('Group is not defined for dataset %s' % package_dict['title'])
                 data_dict = {
                     'id': group_name,
-                    'name': self._gen_new_name(group_name),
+                    'name': munge_title_to_name(group_name),
                     'title': group_name
                     }
                 try:
