@@ -40,20 +40,20 @@ class ZhstatHarvester(HarvesterBase):
     ORGANIZATION = {
         u'de': {
             'name': u'Kanton Zürich',
-            'description': u'Im Rahmen eines Pilotversuchs publiziert der Kanton ausgewählte Datensätze des Statistischen Amts und des GIS Zentrums.',
+            'description': u'Im Rahmen eines Pilotversuchs veröffentlicht der Kanton Zürich ausgewählte Datensätze des Statistischen Amts und des GIS-ZH (Geografisches Informationssystem des Kantons Zürich).',
             'website': 'http://opendata.zh.ch',
         },
         u'fr': {
             'name': u'Canton de Zurich',
-            'description': 'ZH Beschreibung FR',
+            'description': u"Dans le cadre d'un projet pilote le canton de Zurich publie des données sélectionnées de l'Office de la statistique et du GIS-ZH (Système d'information géographique du canton de Zurich).",
         },
         u'it': {
             'name': u'Cantone di Zurigo',
-            'description': 'ZH Beschreibung IT',
+            'description': u"Come parte di un test pilota, il cantone di Zurigo pubblica dei dati selezionati dell'Ufficio statistico e del GIS-ZH (Sistema Informativo Territoriale del cantone di Zurigo)",
         },
         u'en': {
             'name': u'Canton of Zurich',
-            'description': 'ZH Beschreibung EN',
+            'description': u"As part of a pilot test, the Canton of Zurich publishes selected data of the Statistical Office and of the GIS-ZH (Geographic Information System of the Canton of Zurich).",
         }
     }
 
