@@ -12,6 +12,7 @@ from ckan.model import Session, Package
 from ckan.logic import ValidationError, NotFound, get_action, action
 from ckan.lib.helpers import json
 from ckanext.harvest.harvesters.base import munge_tag
+from ckan.lib.munge import munge_title_to_name
 
 from ckanext.harvest.model import HarvestJob, HarvestObject, HarvestGatherError, \
                                     HarvestObjectError
@@ -38,11 +39,25 @@ class ZhstatHarvester(HarvesterBase):
     AWS_SECRET_KEY = config.get('ckanext.zhstat.secret_key')
 
     ORGANIZATION = {
-        u'de': u'Statistisches Amt des Kantons Zürich',
-        u'fr': u'fr_Statistisches Amt des Kantons Zürich',
-        u'it': u'it_Statistisches Amt des Kantons Zürich',
-        u'en': u'Statistical Office of Canton of Zurich',
+        u'de': {
+            'name': u'Kanton Zürich',
+            'description': u'Im Rahmen eines Pilotversuchs veröffentlicht der Kanton Zürich ausgewählte Datensätze des Statistischen Amts und des GIS-ZH (Geografisches Informationssystem des Kantons Zürich).',
+            'website': 'http://opendata.zh.ch',
+        },
+        u'fr': {
+            'name': u'Canton de Zurich',
+            'description': u"Dans le cadre d'un projet pilote le canton de Zurich publie des données sélectionnées de l'Office de la statistique et du GIS-ZH (Système d'information géographique du canton de Zurich).",
+        },
+        u'it': {
+            'name': u'Cantone di Zurigo',
+            'description': u"Come parte di un test pilota, il cantone di Zurigo pubblica dei dati selezionati dell'Ufficio statistico e del GIS-ZH (Sistema Informativo Territoriale del cantone di Zurigo)",
+        },
+        u'en': {
+            'name': u'Canton of Zurich',
+            'description': u"As part of a pilot project, the Canton of Zurich publishes selected data of the Statistical Office and of the GIS-ZH (Geographic Information System of the Canton of Zurich).",
+        }
     }
+
     LANG_CODES = ['de', 'fr', 'it', 'en']
 
     config = {
@@ -154,11 +169,12 @@ class ZhstatHarvester(HarvesterBase):
                             })
                 for lang, org in self.ORGANIZATION.items():
                     if lang != u'de':
-                        translations.append({
-                            'lang_code': lang,
-                            'term': self.ORGANIZATION[u'de'],
-                            'term_translation': org
-                        })
+                        for field in ['name', 'description']:
+                            translations.append({
+                                'lang_code': lang,
+                                'term': self.ORGANIZATION[u'de'][field],
+                                'term_translation': org[field]
+                            })
 
         return translations
 
@@ -286,7 +302,7 @@ class ZhstatHarvester(HarvesterBase):
                     raise GroupNotFoundError('Group is not defined for dataset %s' % package_dict['title'])
                 data_dict = {
                     'id': group_name,
-                    'name': self._gen_new_name(group_name),
+                    'name': munge_title_to_name(group_name),
                     'title': group_name
                     }
                 try:
@@ -296,13 +312,20 @@ class ZhstatHarvester(HarvesterBase):
                     log.info('created the group ' + group['id'])
 
             # Find or create the organization the dataset should get assigned to
+            data_dict = {
+                'permission': 'edit_group',
+                'id': munge_title_to_name(self.ORGANIZATION[u'de']['name']),
+                'name': munge_title_to_name(self.ORGANIZATION[u'de']['name']),
+                'title': self.ORGANIZATION[u'de']['name'],
+                'description': self.ORGANIZATION[u'de']['description'],
+                'extras': [
+                    {
+                        'key': 'website',
+                        'value': self.ORGANIZATION[u'de']['website']
+                    }
+                ]
+            }
             try:
-                data_dict = {
-                    'permission': 'edit_group',
-                    'id': self._gen_new_name(self.ORGANIZATION['de']),
-                    'name': self._gen_new_name(self.ORGANIZATION['de']),
-                    'title': self.ORGANIZATION['de']
-                }
                 package_dict['owner_org'] = get_action('organization_show')(context, data_dict)['id']
             except:
                 organization = get_action('organization_create')(context, data_dict)

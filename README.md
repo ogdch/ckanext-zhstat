@@ -21,7 +21,7 @@ Make sure to add `zhstat` and `zhstat_harvester` to `ckan.plugins` in your confi
 
 ```bash
 source /home/www-data/pyenv/bin/activate
-paster --plugin=ckanext-zhstat zhstat_harvester gather_consumer -c development.ini &
-paster --plugin=ckanext-zhstat zhstat_harvester fetch_consumer -c development.ini &
-paster --plugin=ckanext-zhstat zhstat_harvester run -c development.ini
+paster --plugin=ckanext-zhstat harvester gather_consumer -c development.ini &
+paster --plugin=ckanext-zhstat harvester fetch_consumer -c development.ini &
+paster --plugin=ckanext-zhstat harvester run -c development.ini
 ```
