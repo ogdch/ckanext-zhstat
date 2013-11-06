@@ -2,6 +2,7 @@
 
 import os
 from lxml import etree
+from uuid import uuid4
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 import tempfile
@@ -65,6 +66,22 @@ class ZhstatHarvester(HarvesterBase):
     }
 
     bucket = None
+
+    def _gen_new_name(self, title, current_id=None):
+        '''
+        Creates a URL friendly name from a title
+
+        If the name already exists, it will add some random characters at the end
+        '''
+
+        name = munge_title_to_name(title).replace('_', '-')
+        while '--' in name:
+            name = name.replace('--', '-')
+        pkg_obj = Session.query(Package).filter(Package.name == name).first()
+        if pkg_obj and pkg_obj.id != current_id:
+            return name + str(uuid4())[:5]
+        else:
+            return name
 
     def _get_s3_bucket(self):
         '''
