@@ -304,7 +304,7 @@ class ZhstatHarvester(HarvesterBase):
             package_dict = json.loads(harvest_object.content)
 
             package_dict['id'] = harvest_object.guid
-            package_dict['name'] = self._gen_new_name(package_dict['title'])
+            package_dict['name'] = self._gen_new_name(package_dict['title'], package_dict['id'])
 
             user = model.User.get(self.HARVEST_USER)
             context = {
