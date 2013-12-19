@@ -31,13 +31,13 @@ class ZhstatHarvester(HarvesterBase):
 
     HARVEST_USER = 'harvest'
 
-    BUCKET_NAME = 'bar-opendata-ch'
+    BUCKET_NAME = config.get('ckanext.zhstat.s3_bucket')
     DATA_PATH = 'Kanton-ZH/Statistik/'
     METADATA_FILE_NAME = 'metadata.xml'
 
     # Define the keys in the CKAN .ini file
-    AWS_ACCESS_KEY = config.get('ckanext.zhstat.access_key')
-    AWS_SECRET_KEY = config.get('ckanext.zhstat.secret_key')
+    AWS_ACCESS_KEY = config.get('ckanext.zhstat.s3_key')
+    AWS_SECRET_KEY = config.get('ckanext.zhstat.s3_token')
 
     ORGANIZATION = {
         u'de': {
