@@ -151,6 +151,14 @@ class ZhstatHarvester(HarvesterBase):
         k.key = self.DATA_PATH + file_name
         return k.generate_url(0, query_auth=False, force_http=True)
 
+#    def _get_file_size(self, file_name):
+#        '''
+#        Find the filesize for the given S3 file name
+#        '''
+#        k = Key(self._get_s3_bucket())
+#        k.key = self.DATA_PATH + file_name
+#        return self._get_s3_bucket().lookup(k.key).size
+
     def _generate_tags_array(self, dataset):
         '''
         All tags for a dataset into an array
@@ -240,7 +248,9 @@ class ZhstatHarvester(HarvesterBase):
                             'url': url,
                             'name': resource.find('name').text,
                             'format': resource.find('type').text,
-                            'description': description
+                            'description': resource.find('description').text if resource.find('description') is not None else '',
+                            'version': data.find('version').text
+#                            'size' : _get_file_size(resource.find('name').text)
                         })
 
         return resources
@@ -264,10 +274,15 @@ class ZhstatHarvester(HarvesterBase):
                 'maintainer_email': base_data.find('maintainer_email').text,
                 'license_url': base_data.find('license').get('url'),
                 'license_id': base_data.find('license').text,
+<<<<<<< HEAD
                 'translations': self._generate_term_translations(
                     base_data,
                     dataset
                 ),
+=======
+                'version': base_data.find('version').text,
+                'translations': self._generate_term_translations(base_data, dataset),
+>>>>>>> Added version to resource and dataset.
                 'resources': resources,
                 'tags': self._generate_tags_array(base_data),
                 'groups': groups
