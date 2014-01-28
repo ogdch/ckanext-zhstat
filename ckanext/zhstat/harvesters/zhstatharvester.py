@@ -274,15 +274,8 @@ class ZhstatHarvester(HarvesterBase):
                 'maintainer_email': base_data.find('maintainer_email').text,
                 'license_url': base_data.find('license').get('url'),
                 'license_id': base_data.find('license').text,
-<<<<<<< HEAD
-                'translations': self._generate_term_translations(
-                    base_data,
-                    dataset
-                ),
-=======
                 'version': base_data.find('version').text,
                 'translations': self._generate_term_translations(base_data, dataset),
->>>>>>> Added version to resource and dataset.
                 'resources': resources,
                 'tags': self._generate_tags_array(base_data),
                 'groups': groups
