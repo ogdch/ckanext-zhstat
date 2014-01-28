@@ -151,13 +151,13 @@ class ZhstatHarvester(HarvesterBase):
         k.key = self.DATA_PATH + file_name
         return k.generate_url(0, query_auth=False, force_http=True)
 
-#    def _get_file_size(self, file_name):
-#        '''
-#        Find the filesize for the given S3 file name
-#        '''
-#        k = Key(self._get_s3_bucket())
-#        k.key = self.DATA_PATH + file_name
-#        return self._get_s3_bucket().lookup(k.key).size
+    def _get_file_size(self, file_name):
+        '''
+        Find the filesize for the given S3 file name
+        '''
+        k = Key(self._get_s3_bucket())
+        k.key = self.DATA_PATH + file_name
+        return self._get_s3_bucket().lookup(k.key).size
 
     def _generate_tags_array(self, dataset):
         '''
@@ -249,9 +249,10 @@ class ZhstatHarvester(HarvesterBase):
                             'name': resource.find('name').text,
                             'format': resource.find('type').text,
                             'description': resource.find('description').text if resource.find('description') is not None else '',
-                            'version': data.find('version').text
-#                            'size' : _get_file_size(resource.find('name').text)
+                            'version': data.find('version').text,
+                            'size': self._get_file_size(resource.find('name').text)
                         })
+                        log.debug(self._get_file_size(resource.find('name').text))
 
         return resources
 
