@@ -252,7 +252,6 @@ class ZhstatHarvester(HarvesterBase):
                             'version': data.find('version').text,
                             'size': self._get_file_size(resource.find('name').text)
                         })
-                        log.debug(self._get_file_size(resource.find('name').text))
 
         return resources
 
