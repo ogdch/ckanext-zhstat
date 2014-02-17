@@ -248,9 +248,11 @@ class ZhstatHarvester(HarvesterBase):
                             'url': url,
                             'name': resource.find('name').text,
                             'format': resource.find('type').text,
-                            'description': resource.find('description').text if resource.find('description') is not None else '',
+                            'description': description,
                             'version': data.find('version').text,
-                            'size': self._get_file_size(resource.find('name').text)
+                            'size': self._get_file_size(
+                                resource.find('name').text
+                            )
                         })
 
         return resources
@@ -275,7 +277,10 @@ class ZhstatHarvester(HarvesterBase):
                 'license_url': base_data.find('license').get('url'),
                 'license_id': base_data.find('license').text,
                 'version': base_data.find('version').text,
-                'translations': self._generate_term_translations(base_data, dataset),
+                'translations': self._generate_term_translations(
+                    base_data,
+                    dataset
+                ),
                 'resources': resources,
                 'tags': self._generate_tags_array(base_data),
                 'groups': groups
