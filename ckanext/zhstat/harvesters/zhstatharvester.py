@@ -7,22 +7,21 @@ from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 import tempfile
 
-from ckan.lib.base import c
 from ckan import model
 from ckan.model import Session, Package
-from ckan.logic import ValidationError, NotFound, get_action, action
+from ckan.logic import get_action, action
 from ckan.lib.helpers import json
 from ckanext.harvest.harvesters.base import munge_tag
 from ckan.lib.munge import munge_title_to_name
 
-from ckanext.harvest.model import HarvestJob, HarvestObject, HarvestGatherError, \
-                                    HarvestObjectError
+from ckanext.harvest.model import HarvestObject
 from ckanext.harvest.harvesters import HarvesterBase
 
 from pylons import config
 
 import logging
 log = logging.getLogger(__name__)
+
 
 class ZhstatHarvester(HarvesterBase):
     '''
@@ -42,20 +41,39 @@ class ZhstatHarvester(HarvesterBase):
     ORGANIZATION = {
         u'de': {
             'name': u'Kanton Zürich',
-            'description': u'Im Rahmen eines Pilotversuchs veröffentlicht der Kanton Zürich ausgewählte Datensätze des Statistischen Amts und des GIS-ZH (Geografisches Informationssystem des Kantons Zürich).',
+            'description': (
+                u'Im Rahmen eines Pilotversuchs veröffentlicht der Kanton '
+                u'Zürich ausgewählte Datensätze des Statistischen Amts und '
+                u'des GIS-ZH (Geografisches Informationssystem des '
+                u'Kantons Zürich).'
+            ),
             'website': 'http://opendata.zh.ch',
         },
         u'fr': {
             'name': u'Canton de Zurich',
-            'description': u"Dans le cadre d'un projet pilote le canton de Zurich publie des données sélectionnées de l'Office de la statistique et du GIS-ZH (Système d'information géographique du canton de Zurich).",
+            'description': (
+                u"Dans le cadre d'un projet pilote le canton de Zurich "
+                u"publie des données sélectionnées de l'Office de la "
+                u"statistique et du GIS-ZH (Système d'information "
+                u"géographique du canton de Zurich)."
+            ),
         },
         u'it': {
             'name': u'Cantone di Zurigo',
-            'description': u"Come parte di un test pilota, il cantone di Zurigo pubblica dei dati selezionati dell'Ufficio statistico e del GIS-ZH (Sistema Informativo Territoriale del cantone di Zurigo)",
+            'description': (
+                u"Come parte di un test pilota, il cantone di Zurigo "
+                u"pubblica dei dati selezionati dell'Ufficio statistico "
+                u"e del GIS-ZH (Sistema Informativo Territoriale del "
+                u"cantone di Zurigo)"
+            ),
         },
         u'en': {
             'name': u'Canton of Zurich',
-            'description': u"As part of a pilot project, the Canton of Zurich publishes selected data of the Statistical Office and of the GIS-ZH (Geographic Information System of the Canton of Zurich).",
+            'description': (
+                u"As part of a pilot project, the Canton of Zurich publishes "
+                u"selected data of the Statistical Office and of the GIS-ZH "
+                u"(Geographic Information System of the Canton of Zurich)."
+            ),
         }
     }
 
@@ -71,7 +89,8 @@ class ZhstatHarvester(HarvesterBase):
         '''
         Creates a URL friendly name from a title
 
-        If the name already exists, it will add some random characters at the end
+        If the name already exists, it will add
+        some random characters at the end
         '''
 
         name = munge_title_to_name(title).replace('_', '-')
@@ -101,7 +120,10 @@ class ZhstatHarvester(HarvesterBase):
         try:
             metadata_file = Key(self._get_s3_bucket())
             metadata_file.key = self.DATA_PATH + self.METADATA_FILE_NAME
-            metadata_file_path = os.path.join(temp_dir, self.METADATA_FILE_NAME)
+            metadata_file_path = os.path.join(
+                temp_dir,
+                self.METADATA_FILE_NAME
+            )
             log.debug('Saving metadata file to %s' % metadata_file_path)
             metadata_file.get_contents_to_filename(metadata_file_path)
             return open(metadata_file_path).read()
@@ -128,6 +150,14 @@ class ZhstatHarvester(HarvesterBase):
         k = Key(self._get_s3_bucket())
         k.key = self.DATA_PATH + file_name
         return k.generate_url(0, query_auth=False, force_http=True)
+
+    def _get_file_size(self, file_name):
+        '''
+        Find the filesize for the given S3 file name
+        '''
+        k = Key(self._get_s3_bucket())
+        k.key = self.DATA_PATH + file_name
+        return self._get_s3_bucket().lookup(k.key).size
 
     def _generate_tags_array(self, dataset):
         '''
@@ -165,20 +195,25 @@ class ZhstatHarvester(HarvesterBase):
         for data in dataset:
             if base_data.find('title') != data.find('title'):
                 lang = data.get('{http://www.w3.org/XML/1998/namespace}lang')
-                for base_group, group in zip(self._get_data_groups(base_data), self._get_data_groups(data)):
+                for base_group, group in zip(
+                        self._get_data_groups(base_data),
+                        self._get_data_groups(data)):
                     translations.append({
                         'lang_code': lang,
                         'term': base_group,
                         'term_translation': group
                     })
-                for base_tag, tag in zip(self._generate_tags_array(base_data), self._generate_tags_array(data)):
+                for base_tag, tag in zip(
+                        self._generate_tags_array(base_data),
+                        self._generate_tags_array(data)):
                     translations.append({
                         'lang_code': lang,
                         'term': munge_tag(base_tag),
                         'term_translation': munge_tag(tag)
                     })
                 for key in ['title', 'author', 'maintainer', 'description']:
-                    if base_data.find(key) is not None and data.find(key) is not None:
+                    if (base_data.find(key) is not None
+                            and data.find(key) is not None):
                         translations.append({
                             'lang_code': lang,
                             'term': base_data.find(key).text,
@@ -204,11 +239,20 @@ class ZhstatHarvester(HarvesterBase):
             if data.find('resources') is not None:
                 for resource in data.find('resources'):
                     if self._file_is_available(resource.find('name').text):
+                        url = self._get_file_url(resource.find('name').text)
+                        if resource.find('description') is not None:
+                            description = resource.find('description').text
+                        else:
+                            description = ''
                         resources.append({
-                            'url': self._get_file_url(resource.find('name').text),
+                            'url': url,
                             'name': resource.find('name').text,
                             'format': resource.find('type').text,
-                            'description': resource.find('description').text if resource.find('description') is not None else ''
+                            'description': description,
+                            'version': data.find('version').text,
+                            'size': self._get_file_size(
+                                resource.find('name').text
+                            )
                         })
 
         return resources
@@ -232,7 +276,11 @@ class ZhstatHarvester(HarvesterBase):
                 'maintainer_email': base_data.find('maintainer_email').text,
                 'license_url': base_data.find('license').get('url'),
                 'license_id': base_data.find('license').text,
-                'translations': self._generate_term_translations(base_data, dataset),
+                'version': base_data.find('version').text,
+                'translations': self._generate_term_translations(
+                    base_data,
+                    dataset
+                ),
                 'resources': resources,
                 'tags': self._generate_tags_array(base_data),
                 'groups': groups
@@ -244,7 +292,10 @@ class ZhstatHarvester(HarvesterBase):
         return {
             'name': 'zhstat',
             'title': 'Statistical Office of Canton of Zurich',
-            'description': 'Harvests the data of the Statistical Office of Canton of Zurich',
+            'description': (
+                'Harvests the data of the Statistical '
+                'Office of Canton of Zurich'
+            ),
             'form_config_interface': 'Text'
         }
 
@@ -256,7 +307,8 @@ class ZhstatHarvester(HarvesterBase):
 
         for dataset in etree.fromstring(self._fetch_metadata(), parser=parser):
 
-            # Get the german data if one is available, otherwise get the first one
+            # Get the german data if one is available,
+            # otherwise get the first one
             base_datas = dataset.xpath("data[@xml:lang='de']")
             if len(base_datas) != 0:
                 base_data = base_datas[0]
@@ -267,15 +319,18 @@ class ZhstatHarvester(HarvesterBase):
 
             if metadata:
                 obj = HarvestObject(
-                    guid = dataset.get('id'),
-                    job = harvest_job,
-                    content = json.dumps(metadata)
+                    guid=dataset.get('id'),
+                    job=harvest_job,
+                    content=json.dumps(metadata)
                 )
                 obj.save()
                 log.debug('adding ' + dataset.get('id') + ' to the queue')
                 ids.append(obj.id)
             else:
-                log.debug('Skipping ' + dataset.get('id') + ' since no resources or groups are available')
+                log.debug(
+                    'Skipping %s since no resources or groups are available'
+                    % dataset.get('id')
+                )
 
         return ids
 
@@ -304,7 +359,10 @@ class ZhstatHarvester(HarvesterBase):
             package_dict = json.loads(harvest_object.content)
 
             package_dict['id'] = harvest_object.guid
-            package_dict['name'] = self._gen_new_name(package_dict['title'], package_dict['id'])
+            package_dict['name'] = self._gen_new_name(
+                package_dict['title'],
+                package_dict['id']
+            )
 
             user = model.User.get(self.HARVEST_USER)
             context = {
@@ -316,19 +374,24 @@ class ZhstatHarvester(HarvesterBase):
             # Find or create group the dataset should get assigned to
             for group_name in package_dict['groups']:
                 if not group_name:
-                    raise GroupNotFoundError('Group is not defined for dataset %s' % package_dict['title'])
+                    raise GroupNotFoundError(
+                        'Group is not defined for dataset %s'
+                        % package_dict['title']
+                    )
                 data_dict = {
                     'id': group_name,
                     'name': munge_title_to_name(group_name),
                     'title': group_name
                     }
                 try:
-                    group_id = get_action('group_show')(context, data_dict)['id']
+                    group = get_action('group_show')(context, data_dict)
+                    log.info('found  group ' + group['id'])
                 except:
                     group = get_action('group_create')(context, data_dict)
                     log.info('created the group ' + group['id'])
 
-            # Find or create the organization the dataset should get assigned to
+            # Find or create the organization
+            # the dataset should get assigned to
             data_dict = {
                 'permission': 'edit_group',
                 'id': munge_title_to_name(self.ORGANIZATION[u'de']['name']),
@@ -343,11 +406,16 @@ class ZhstatHarvester(HarvesterBase):
                 ]
             }
             try:
-                package_dict['owner_org'] = get_action('organization_show')(context, data_dict)['id']
+                package_dict['owner_org'] = get_action('organization_show')(
+                    context,
+                    data_dict
+                )['id']
             except:
-                organization = get_action('organization_create')(context, data_dict)
+                organization = get_action('organization_create')(
+                    context,
+                    data_dict
+                )
                 package_dict['owner_org'] = organization['id']
-
 
             # Save additional metadata in extras
             extras = []
@@ -357,7 +425,11 @@ class ZhstatHarvester(HarvesterBase):
             log.debug('Extras %s' % extras)
 
             package = model.Package.get(package_dict['id'])
-            pkg_role = model.PackageRole(package=package, user=user, role=model.Role.ADMIN)
+            model.PackageRole(
+                package=package,
+                user=user,
+                role=model.Role.ADMIN
+            )
 
             self._create_or_update_package(package_dict, harvest_object)
 
